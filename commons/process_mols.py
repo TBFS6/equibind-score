@@ -6,8 +6,7 @@ import dgl
 import numpy as np
 import scipy.spatial as spa
 import torch
-from Bio.PDB import get_surface, PDBParser
-from Bio.PDB.SASA import ShrakeRupley
+from Bio.PDB import get_surface, PDBParser, ShrakeRupley
 from Bio.PDB.PDBExceptions import PDBConstructionWarning
 from biopandas.pdb import PandasPdb
 from rdkit import Chem
