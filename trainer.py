@@ -5,20 +5,30 @@ from dgl.nn import GraphConv
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 import pandas as pd
 from dgl.data.utils import load_graphs
 
+import argparse
+
+# Parse arguments
+p = argparse.ArgumentParser()
+p.add_argument('--train', type=str, default='hidden_layers/train2.bin', help='path to train binary layers')
+p.add_argument('--val', type=str, default='hidden_layers/val2.bin', help='path to val binary layers')
+p.add_argument('--test', type=str, default='hidden_layers/test2.bin', help='path to test binary layers')
+p.add_argument('--model_output', type=str, default='runs/score/best_checkpoint.pt', help='path to .pt file for saving model')
+args = p.parse_args()
+
 # Load training data
-traingraphls, labeldict = load_graphs('hidden_layers/test.bin')
+traingraphls, labeldict = load_graphs(args.train)
 trainnames = list(labeldict.keys())
 
 # Load validation data
-valgraphls, labeldict = load_graphs('hidden_layers/test.bin')
+valgraphls, labeldict = load_graphs(args.val)
 valnames = list(labeldict.keys())
 
 # Create the model with given dimensions
-model = score_model.GCN(64, 16, 1)
-optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+model = score_model.GAT()
 
 # Load targets
 targets = pd.read_csv('BindingData.csv')
@@ -49,13 +59,14 @@ valpK = torch.Tensor(valpK)
 # Define loss
 loss = nn.MSELoss()
 
-# For early stopping
-stop = False
-patience = 5
-counter = 0
-prevvalloss = torch.tensor(float('inf'))
+# For optimisation
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+scheduler = ReduceLROnPlateau(optimizer,patience=0,factor=0.1)
 
-while not stop:
+# Training params
+num_epochs = 30
+
+for i in range(num_epochs):
 
     # Training loop
     pred = torch.squeeze(model(train_batched_graph, train_batched_graph.ndata['final_hidden'].float()))
@@ -66,20 +77,13 @@ while not stop:
 
     # Validation
     with torch.no_grad():
-
         valpred = torch.squeeze(model(val_batched_graph, val_batched_graph.ndata['final_hidden'].float()))
-        valloss = loss(pred,valpK)
-        print('Validation loss: ' + str(float(valloss)))
+        valloss = loss(valpred,valpK)
+        print('Iteration ' +str(i)+ ' validation loss: ' + str(float(valloss)))
+    
+    # Scheduler
+    scheduler.step(valloss)
 
-        # Check if validation loss is increasing
-        if valloss > prevvalloss:
-            counter += 1
-        else:
-            counter = 0
-        
-        if counter == patience:
-            print('Validation loss increasing, saving model')
-            stop = True
-            torch.save(model.state_dict(), 'runs/scoremodel/bestcheckpoint.pt')
+print('Training finished, saving model')
+torch.save(model.state_dict(), args.model_output)
 
-print('Training finished')

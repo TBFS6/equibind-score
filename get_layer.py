@@ -171,6 +171,7 @@ def hiddenlayer():
 
     seed_all(args.seed)
     device = torch.device("cuda:0" if torch.cuda.is_available() and args.device == 'cuda' else "cpu")
+    print(device)
     checkpoint = torch.load('runs/flexible_self_docking/best_checkpoint.pt', map_location=device)
     model = None
     all_ligs_coords_corrected = []
@@ -198,7 +199,6 @@ def hiddenlayer():
         rec_name = [i for i in file_names if 'rec.pdb' in i or 'protein' in i][0]
         lig_names = [i for i in file_names if 'ligand' in i]
         rec_path = os.path.join(args.inference_path, name, rec_name)
-        print(rec_path)
         for lig_name in lig_names:
             if not os.path.exists(os.path.join(args.inference_path, name, lig_name)):
                 raise ValueError(f'Path does not exist: {os.path.join(args.inference_path, name, lig_name)}')
