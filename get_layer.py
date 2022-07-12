@@ -231,16 +231,16 @@ def hiddenlayer():
         lig_graph = lig_graph.to(device)
         geometry_graph = geometry_graph.to(device)
 
-        start_lig_coords = lig_graph.ndata['x']
-        # Randomly rotate and translate the ligand.
-        rot_T, rot_b = random_rotation_translation(translation_distance=5)
-        if (use_rdkit_coords):
-            lig_coords_to_move = lig_graph.ndata['new_x']
-        else:
-            lig_coords_to_move = lig_graph.ndata['x']
-        mean_to_remove = lig_coords_to_move.mean(dim=0, keepdims=True)
-        input_coords = (rot_T @ (lig_coords_to_move - mean_to_remove).T).T + rot_b
-        lig_graph.ndata['new_x'] = input_coords
+        # start_lig_coords = lig_graph.ndata['x']
+        # # Randomly rotate and translate the ligand.
+        # rot_T, rot_b = random_rotation_translation(translation_distance=5)
+        # if (use_rdkit_coords):
+        #     lig_coords_to_move = lig_graph.ndata['new_x']
+        # else:
+        #     lig_coords_to_move = lig_graph.ndata['x']
+        # mean_to_remove = lig_coords_to_move.mean(dim=0, keepdims=True)
+        # input_coords = (rot_T @ (lig_coords_to_move - mean_to_remove).T).T + rot_b
+        # lig_graph.ndata['new_x'] = input_coords
 
         if model == None:
             model = load_model(args, data_sample=(lig_graph, rec_graph), device=device)
