@@ -227,8 +227,9 @@ def hiddenlayer():
             geometry_graph = None
 
         # move graphs to cuda
-        rec_graph.to(device)
-        lig_graph.to(device)
+        rec_graph = rec_graph.to(device)
+        lig_graph = lig_graph.to(device)
+        geometry_graph = geometry_graph.to(device)
 
         start_lig_coords = lig_graph.ndata['x']
         # Randomly rotate and translate the ligand.
