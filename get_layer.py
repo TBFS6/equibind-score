@@ -171,7 +171,6 @@ def hiddenlayer():
 
     seed_all(args.seed)
     device = torch.device("cuda:0" if torch.cuda.is_available() and args.device == 'cuda' else "cpu")
-    print(device)
     checkpoint = torch.load('runs/flexible_self_docking/best_checkpoint.pt', map_location=device)
     model = None
     all_ligs_coords_corrected = []
@@ -226,6 +225,10 @@ def hiddenlayer():
             geometry_graph = get_geometry_graph_ring(lig)
         else:
             geometry_graph = None
+
+        # move graphs to cuda
+        rec_graph.to(device)
+        lig_graph.to(device)
 
         start_lig_coords = lig_graph.ndata['x']
         # Randomly rotate and translate the ligand.
