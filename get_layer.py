@@ -61,6 +61,7 @@ def hiddenlayer():
 
         p.add_argument('--config', type=argparse.FileType(mode='r'), default='configs/config.yml')
 
+        p.add_argument('--batch_size', type=int, default=100, help='size of batches to save')
         p.add_argument('--checkpoint', type=str, help='path to .pt file in a checkpoint directory')
         p.add_argument('--output_directory', type=str, default=None, help='path where to put the predicted results')
         p.add_argument('--run_corrections', type=bool, default=False,
@@ -71,7 +72,7 @@ def hiddenlayer():
         p.add_argument('--experiment_name', type=str, help='name that will be added to the runs folder output')
         p.add_argument('--logdir', type=str, default='runs', help='tensorboard logdirectory')
         p.add_argument('--num_epochs', type=int, default=2500, help='number of times to iterate through all samples')
-        p.add_argument('--batch_size', type=int, default=1024, help='samples that will be processed in parallel')
+        #p.add_argument('--batch_size', type=int, default=1024, help='samples that will be processed in parallel')
         p.add_argument('--patience', type=int, default=20, help='stop training after no improvement in this many epochs')
         p.add_argument('--minimum_epochs', type=int, default=0, help='minimum numer of epochs to run')
         p.add_argument('--dataset_params', type=dict, default={},
@@ -191,8 +192,13 @@ def hiddenlayer():
     graphls = []
     graph_labels = {}
     ###
-
     for idx, name in enumerate(names):
+        if int(idx+1) % args.batch_size == 0:
+            print('Saving batch number ' + str(idx//args.batch_size+1))
+            outname = args.output_directory + '/' + str(idx//args.batch_size+1) + '.bin'
+            save_graphs(outname,graphls,graph_labels)
+            graphls = []
+            graph_labels = {}
         print(f'\nProcessing {name}: complex {idx + 1} of {len(names)}')
         file_names = os.listdir(os.path.join(args.inference_path, name))
         rec_name = [i for i in file_names if 'rec.pdb' in i or 'protein' in i][0]
@@ -271,10 +277,10 @@ def hiddenlayer():
 
         graph_labels[name] = torch.tensor([idx])
 
-    return graphls, args, graph_labels
+    print('Saving final batch')
+    outname = args.output_directory + '/' + str(idx//args.batch_size) + '.bin'
+    save_graphs(outname,graphls,graph_labels)
     
 
 if __name__ == '__main__':
-    graphls, args, graph_labels = hiddenlayer()
-    outname = args.output_directory
-    save_graphs(outname,graphls,graph_labels)
+    hiddenlayer()

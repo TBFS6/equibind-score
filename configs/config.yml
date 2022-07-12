@@ -1,6 +1,8 @@
 run_dirs:
   - flexible_self_docking # this specifies which equibind model to use. can try train on both?
 
-inference_path: 'data/test2' # this should be your input file path as described in the main readme
+inference_path: 'data/test' # this should be your input file path as described in the main readme
 
-output_directory: 'hidden_layers/test2.bin' # the hidden layers will be saved here
+output_directory: 'hidden_layers/test' # the hidden layers will be saved here
+
+batch_size: 100
