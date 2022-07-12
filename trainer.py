@@ -1,5 +1,6 @@
 import models.score_model as score_model
 
+import os
 import dgl
 from dgl.nn import GraphConv
 import torch
@@ -13,36 +14,44 @@ import argparse
 
 # Parse arguments
 p = argparse.ArgumentParser()
-p.add_argument('--train', type=str, default='hidden_layers/train2.bin', help='path to train binary layers')
-p.add_argument('--val', type=str, default='hidden_layers/val2.bin', help='path to val binary layers')
-p.add_argument('--test', type=str, default='hidden_layers/test2.bin', help='path to test binary layers')
+p.add_argument('--train', type=str, default='hidden_layers/train', help='path to train binary layers')
+p.add_argument('--val', type=str, default='hidden_layers/val', help='path to val binary layers')
+p.add_argument('--test', type=str, default='hidden_layers/test', help='path to test binary layers')
 p.add_argument('--model_output', type=str, default='runs/score/best_checkpoint.pt', help='path to .pt file for saving model')
 args = p.parse_args()
 
 # Load training data
-traingraphls, labeldict = load_graphs(args.train)
-trainnames = list(labeldict.keys())
+traingraphls = []
+trainnames = []
+for file in os.listdir(args.train):
+    temptraingraphls, labeldict = load_graphs(args.train+'/'+file)
+    temptrainnames = list(labeldict.keys())
+    traingraphls = traingraphls + temptraingraphls
+    trainnames = trainnames + temptrainnames
 
 # Load validation data
-valgraphls, labeldict = load_graphs(args.val)
-valnames = list(labeldict.keys())
+valgraphls = []
+valnames = []
+for file in os.listdir(args.val):
+    tempvalgraphls, labeldict = load_graphs(args.val+'/'+file)
+    tempvalnames = list(labeldict.keys())
+    valgraphls = valgraphls + tempvalgraphls
+    valnames = valnames + tempvalnames
 
 # Create the model with given dimensions
 model = score_model.GAT()
 
 # Load targets
-targets = pd.read_csv('BindingData.csv')
-del targets['SET']
+targets = pd.read_csv('bindingdata.csv')
 targets.set_index('PDB', inplace = True)
 
 # Remove missing ligands
-namesbool = [(i in targets.index) for i in trainnames]
-trainnames = [trainnames[i] for i in range(len(trainnames)) if namesbool[i]]
-traingraphls = [traingraphls[i] for i in range(len(traingraphls)) if namesbool[i]]
-
-namesbool = [(i in targets.index) for i in valnames]
-valnames = [valnames[i] for i in range(len(valnames)) if namesbool[i]]
-valgraphls = [valgraphls[i] for i in range(len(valgraphls)) if namesbool[i]]
+# namesbool = [(i in targets.index) for i in trainnames]
+# trainnames = [trainnames[i] for i in range(len(trainnames)) if namesbool[i]]
+# traingraphls = [traingraphls[i] for i in range(len(traingraphls)) if namesbool[i]]
+# namesbool = [(i in targets.index) for i in valnames]
+# valnames = [valnames[i] for i in range(len(valnames)) if namesbool[i]]
+# valgraphls = [valgraphls[i] for i in range(len(valgraphls)) if namesbool[i]]
 
 # Batch graphs
 train_batched_graph = dgl.batch(traingraphls)
@@ -60,7 +69,7 @@ valpK = torch.Tensor(valpK)
 loss = nn.MSELoss()
 
 # For optimisation
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 scheduler = ReduceLROnPlateau(optimizer,patience=0,factor=0.1)
 
 # Training params
@@ -75,11 +84,13 @@ for i in range(num_epochs):
     target.backward(retain_graph=True)
     optimizer.step()
 
+    print('Iteration ' + str(i )+ ' training loss: ' + str(float(target)))
+
     # Validation
     with torch.no_grad():
         valpred = torch.squeeze(model(val_batched_graph, val_batched_graph.ndata['final_hidden'].float()))
         valloss = loss(valpred,valpK)
-        print('Iteration ' +str(i)+ ' validation loss: ' + str(float(valloss)))
+        print('Iteration ' + str(i )+ ' validation loss: ' + str(float(valloss)))
     
     # Scheduler
     scheduler.step(valloss)

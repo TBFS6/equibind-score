@@ -1,7 +1,7 @@
 import get_layer
 import dgl
 from dgl.nn import GraphConv
-import score_model
+import models.score_model as score_model
 
 graphls, names = get_layer.out(config='inference')
 
