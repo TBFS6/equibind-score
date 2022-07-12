@@ -193,9 +193,9 @@ def hiddenlayer():
     graph_labels = {}
     ###
     for idx, name in enumerate(names):
-        if int(idx+1) % args.batch_size == 0:
-            print('Saving batch number ' + str(idx//args.batch_size+1))
-            outname = args.output_directory + '/' + str(idx//args.batch_size+1) + '.bin'
+        if int(idx) % args.batch_size == 0 and idx != 0:
+            print('\nSaving batch number ' + str(idx//args.batch_size))
+            outname = args.output_directory + '/' + str(idx//args.batch_size) + '.bin'
             save_graphs(outname,graphls,graph_labels)
             graphls = []
             graph_labels = {}

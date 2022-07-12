@@ -125,6 +125,7 @@ venv.bak/
 !/data/timesplit_no_lig_overlap_val
 !/data/timesplit_no_lig_or_rec_overlap_train
 !/data/timesplit_no_lig_or_rec_overlap_val
+hidden_layers/*
 
 
 cache
