@@ -116,7 +116,7 @@ testpK = torch.Tensor(testpK)
 
 # Test prediction and loss
 testpred = torch.squeeze(model(test_batched_graph, test_batched_graph.ndata['final_hidden'].float()))
-testloss = loss(pred,testpK)
+testloss = loss(testpred,testpK)
 
 print('\nTest loss: ' + testloss)
 print('\nTest std: ' + torch.sqrt(testloss))
