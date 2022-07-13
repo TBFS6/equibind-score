@@ -88,7 +88,7 @@ for i in range(num_epochs):
 
     # Validation
     with torch.no_grad():
-        valpred = torch.squeeze(model(val_batched_graph, val_batched_graph.ndata['final_hidden'].float()))
+        valpred = c
         valloss = loss(valpred,valpK)
         print('Iteration ' + str(i )+ ' validation loss: ' + str(float(valloss)))
     
@@ -98,3 +98,25 @@ for i in range(num_epochs):
 print('Training finished, saving model')
 torch.save(model.state_dict(), args.model_output)
 
+# Evaluation
+
+# Load test data
+testgraphls = []
+testnames = []
+for file in os.listdir(args.test):
+    temptestgraphls, labeldict = load_graphs(args.test+'/'+file)
+    temptestnames = list(labeldict.keys())
+    testgraphls = testgraphls + temptestgraphls
+    testnames = testnames + temptestnames
+test_batched_graph = dgl.batch(testgraphls)
+
+# Labels for evaluation
+testpK =  targets.loc[testnames].values.flatten()
+testpK = torch.Tensor(testpK)
+
+# Test prediction and loss
+testpred = torch.squeeze(model(test_batched_graph, test_batched_graph.ndata['final_hidden'].float()))
+testloss = loss(pred,testpK)
+
+print('\nTest loss: ' + testloss)
+print('\nTest std: ' + torch.sqrt(testloss))
