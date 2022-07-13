@@ -88,7 +88,7 @@ for i in range(num_epochs):
 
     # Validation
     with torch.no_grad():
-        valpred = c
+        valpred = torch.squeeze(model(val_batched_graph, val_batched_graph.ndata['final_hidden'].float()))
         valloss = loss(valpred,valpK)
         print('Iteration ' + str(i )+ ' validation loss: ' + str(float(valloss)))
     
