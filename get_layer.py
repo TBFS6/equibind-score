@@ -61,6 +61,7 @@ def hiddenlayer():
 
         p.add_argument('--config', type=argparse.FileType(mode='r'), default='configs/config.yml')
 
+        p.add_argument('--layer', type=str, default='ligand', help='which layer do you want')
         p.add_argument('--batch_size', type=int, default=100, help='size of batches to save')
         p.add_argument('--checkpoint', type=str, help='path to .pt file in a checkpoint directory')
         p.add_argument('--output_directory', type=str, default=None, help='path where to put the predicted results')
@@ -257,23 +258,38 @@ def hiddenlayer():
             model.eval()
 
         # rory's code
-        print('Calculating equibind layer')
-        layer = model.forward(lig_graph,rec_graph,geometry_graph)
-        lig_graph.ndata['final_hidden'] = layer
-        lig_graph.requires_grad = False
+        print('Calculating equibind hidden layer')
+        liglayer, reclayer = model.forward(lig_graph,rec_graph,geometry_graph)
 
-        del lig_graph.ndata['x']
-        del lig_graph.ndata['feat']
-        del lig_graph.ndata['mu_r_norm']
-        del lig_graph.ndata['new_x']
-        del lig_graph.ndata['x_now']
-        del lig_graph.ndata['x_update']
-        del lig_graph.ndata['aggr_msg']
-        del lig_graph.edata['feat']
-        del lig_graph.edata['msg']
-        del lig_graph.edata['x_rel']
+        if args.layer == 'ligand':
 
-        graphls.append(lig_graph)
+            lig_graph.ndata['final_hidden'] = liglayer
+            lig_graph.requires_grad = False
+
+            del lig_graph.ndata['x']
+            del lig_graph.ndata['feat']
+            del lig_graph.ndata['mu_r_norm']
+            del lig_graph.ndata['new_x']
+            del lig_graph.ndata['x_now']
+            del lig_graph.ndata['x_update']
+            del lig_graph.ndata['aggr_msg']
+            del lig_graph.edata['feat']
+            del lig_graph.edata['msg']
+            del lig_graph.edata['x_rel']
+
+            graphls.append(lig_graph)
+        
+        if args.layer == 'receptor':
+
+            rec_graph.ndata['final_hidden'] = reclayer
+            rec_graph.requires_grad = False
+
+            del rec_graph.ndata['x']
+            del rec_graph.ndata['feat']
+            del rec_graph.ndata['mu_r_norm']
+            del rec_graph.edata['feat']
+
+            graphls.append(rec_graph)
 
         graph_labels[name] = torch.tensor([idx])
 

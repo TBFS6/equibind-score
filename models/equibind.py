@@ -873,7 +873,7 @@ class IEGMN(nn.Module):
             return [rotations, translations, ligs_keypts, recs_keypts, ligs_evolved, geom_losses]
 
         # rory's code:
-        return h_feats_lig
+        return h_feats_lig, h_feats_rec
         '''
         ### TODO: run SVD in batches, if possible
         for idx in range(len(ligs_node_idx) - 1):
