@@ -5,6 +5,6 @@ inference_path: 'data/test' # this should be your input file path as described i
 
 output_directory: 'hidden_layers/receptor/test' # the hidden layers will be saved here
 
-batch_size: 10
+batch_size: 100
 
 layer: 'receptor' # which layer do you want (ligand or receptor)
