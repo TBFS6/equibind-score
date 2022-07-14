@@ -3,7 +3,7 @@ run_dirs:
 
 inference_path: 'data/test' # this should be your input file path as described in the main readme
 
-output_directory: 'hidden_layers/test' # the hidden layers will be saved here
+output_directory: 'hidden_layers/receptor/test' # the hidden layers will be saved here
 
 batch_size: 10
 

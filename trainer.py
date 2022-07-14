@@ -14,10 +14,10 @@ import argparse
 
 # Parse arguments
 p = argparse.ArgumentParser()
-p.add_argument('--train', type=str, default='hidden_layers/train', help='path to train binary layers')
-p.add_argument('--val', type=str, default='hidden_layers/val', help='path to val binary layers')
-p.add_argument('--test', type=str, default='hidden_layers/test', help='path to test binary layers')
-p.add_argument('--model_output', type=str, default='runs/score/best_checkpoint.pt', help='path to .pt file for saving model')
+p.add_argument('--train', type=str, default='hidden_layers/ligand/train', help='path to train binary layers')
+p.add_argument('--val', type=str, default='hidden_layers/ligand/val', help='path to val binary layers')
+p.add_argument('--test', type=str, default='hidden_layers/ligand/test', help='path to test binary layers')
+p.add_argument('--model_output', type=str, default='runs/score/ligand_trained.pt', help='path to .pt file for saving model')
 args = p.parse_args()
 
 # Load training data
@@ -119,4 +119,4 @@ testpred = torch.squeeze(model(test_batched_graph, test_batched_graph.ndata['fin
 testloss = loss(testpred,testpK)
 
 print('\nTest loss: ' + testloss)
-print('\nTest std: ' + torch.sqrt(testloss))
+print('\nTest RMSE: ' + torch.sqrt(testloss))
