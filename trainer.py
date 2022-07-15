@@ -14,9 +14,9 @@ import argparse
 
 # Parse arguments
 p = argparse.ArgumentParser()
-p.add_argument('--train', type=str, default='hidden_layers/ligand/train', help='path to train binary layers')
-p.add_argument('--val', type=str, default='hidden_layers/ligand/val', help='path to val binary layers')
-p.add_argument('--test', type=str, default='hidden_layers/ligand/test', help='path to test binary layers')
+p.add_argument('--train', type=str, default='hidden_layers/receptor/train', help='path to train binary layers')
+p.add_argument('--val', type=str, default='hidden_layers/receptor/val', help='path to val binary layers')
+p.add_argument('--test', type=str, default='hidden_layers/receptor/test', help='path to test binary layers')
 p.add_argument('--model_output', type=str, default='runs/score/ligand_trained.pt', help='path to .pt file for saving model')
 args = p.parse_args()
 
@@ -56,6 +56,10 @@ targets.set_index('PDB', inplace = True)
 # Batch graphs
 train_batched_graph = dgl.batch(traingraphls)
 val_batched_graph = dgl.batch(valgraphls)
+
+# Add self loop
+train_batched_graph = dgl.add_self_loop(train_batched_graph)
+val_batched_graph = dgl.add_self_loop(val_batched_graph)
 
 # Labels for loss function
 trainpK =  targets.loc[trainnames].values.flatten()
