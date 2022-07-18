@@ -20,84 +20,80 @@ p.add_argument('--test', type=str, default='hidden_layers/receptor/test', help='
 p.add_argument('--model_output', type=str, default='runs/score/ligand_trained.pt', help='path to .pt file for saving model')
 args = p.parse_args()
 
-# Load training data
-traingraphls = []
-trainnames = []
-for file in os.listdir(args.train):
-    temptraingraphls, labeldict = load_graphs(args.train+'/'+file)
-    temptrainnames = list(labeldict.keys())
-    traingraphls = traingraphls + temptraingraphls
-    trainnames = trainnames + temptrainnames
-
-# Load validation data
-valgraphls = []
-valnames = []
-for file in os.listdir(args.val):
-    tempvalgraphls, labeldict = load_graphs(args.val+'/'+file)
-    tempvalnames = list(labeldict.keys())
-    valgraphls = valgraphls + tempvalgraphls
-    valnames = valnames + tempvalnames
-
-# Create the model with given dimensions
-model = score_model.GAT()
-
 # Load targets
 targets = pd.read_csv('bindingdata.csv')
 targets.set_index('PDB', inplace = True)
 
-# Remove missing ligands
-# namesbool = [(i in targets.index) for i in trainnames]
-# trainnames = [trainnames[i] for i in range(len(trainnames)) if namesbool[i]]
-# traingraphls = [traingraphls[i] for i in range(len(traingraphls)) if namesbool[i]]
-# namesbool = [(i in targets.index) for i in valnames]
-# valnames = [valnames[i] for i in range(len(valnames)) if namesbool[i]]
-# valgraphls = [valgraphls[i] for i in range(len(valgraphls)) if namesbool[i]]
+# Load validation data
+valgraphls = []
+valnames = []
 
-# Batch graphs
-train_batched_graph = dgl.batch(traingraphls)
+for file in os.listdir(args.val):
+    tempvalgraphls, labeldict = load_graphs(args.val+'/'+file)
+    tempvalnames = list(labeldict.keys())
+    valnames = valnames + tempvalnames
+    labels = [int(i) for i in labeldict.values()]
+    smallest = min(labels)
+    labels = [i-smallest for i in labels]
+    tempvalgraphls = [tempvalgraphls[labels[i]] for i in range(len(tempvalgraphls))]
+    valgraphls = valgraphls + tempvalgraphls
+
 val_batched_graph = dgl.batch(valgraphls)
-
-# Add self loop
-train_batched_graph = dgl.add_self_loop(train_batched_graph)
-val_batched_graph = dgl.add_self_loop(val_batched_graph)
-
-# Labels for loss function
-trainpK =  targets.loc[trainnames].values.flatten()
-trainpK = torch.Tensor(trainpK)
-
-# Labels for validation
 valpK =  targets.loc[valnames].values.flatten()
 valpK = torch.Tensor(valpK)
+
+# Create the model with given dimensions
+model = score_model.GAT()
+#model.to('cuda:0')
 
 # Define loss
 loss = nn.MSELoss()
 
 # For optimisation
-optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
-scheduler = ReduceLROnPlateau(optimizer,patience=0,factor=0.1)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.0005)
 
 # Training params
 num_epochs = 30
 
 for i in range(num_epochs):
 
-    # Training loop
-    pred = torch.squeeze(model(train_batched_graph, train_batched_graph.ndata['final_hidden'].float()))
-    target = loss(pred,trainpK)
-    optimizer.zero_grad()
-    target.backward(retain_graph=True)
-    optimizer.step()
+    # Loop through each batch
+    count=0
+    for file in os.listdir(args.train):
 
-    print('Iteration ' + str(i )+ ' training loss: ' + str(float(target)))
+        # Load training batch
+        traingraphls, labeldict = load_graphs(args.train+'/'+file)
+        labels = [int(i) for i in labeldict.values()]
+        smallest = min(labels)
+        labels = [i-smallest for i in labels]
+        traingraphls = [traingraphls[labels[i]] for i in range(len(traingraphls))]
+        trainnames = list(labeldict.keys())
+        train_batched_graph = dgl.batch(traingraphls)
+        trainpK =  targets.loc[trainnames].values.flatten()
+        trainpK = torch.Tensor(trainpK)
+
+        # Training loop
+
+        pred = model(train_batched_graph)
+        try:
+            pred = model(train_batched_graph)
+            optimizer.zero_grad()
+            target = loss(pred,trainpK)
+            target.backward()
+            optimizer.step()
+        except:
+            continue
+
+        print('Batch ' + str(count+1)+ ' training loss: ' + str(float(target)))
+
+        count += 1
 
     # Validation
     with torch.no_grad():
-        valpred = torch.squeeze(model(val_batched_graph, val_batched_graph.ndata['final_hidden'].float()))
+        valpred = model(val_batched_graph)
         valloss = loss(valpred,valpK)
-        print('Iteration ' + str(i )+ ' validation loss: ' + str(float(valloss)))
+        print('\nIteration ' + str(i+1)+ ' validation loss: ' + str(float(valloss)) +'\n')
     
-    # Scheduler
-    scheduler.step(valloss)
 
 print('Training finished, saving model')
 torch.save(model.state_dict(), args.model_output)
@@ -107,14 +103,19 @@ torch.save(model.state_dict(), args.model_output)
 # Load test data
 testgraphls = []
 testnames = []
-for file in os.listdir(args.test):
+
+for file in os.listdir(args.val):
     temptestgraphls, labeldict = load_graphs(args.test+'/'+file)
     temptestnames = list(labeldict.keys())
-    testgraphls = testgraphls + temptestgraphls
     testnames = testnames + temptestnames
-test_batched_graph = dgl.batch(testgraphls)
+    testgraphls = testgraphls + temptestgraphls
+    labels = [int(i) for i in labeldict.values()]
+    smallest = min(labels)
+    labels = [i-smallest for i in labels]
+    testgraphls = [testgraphls[labels[i]] for i in range(len(testgraphls))]
+    break
 
-# Labels for evaluation
+test_batched_graph = dgl.batch(testgraphls)
 testpK =  targets.loc[testnames].values.flatten()
 testpK = torch.Tensor(testpK)
 
