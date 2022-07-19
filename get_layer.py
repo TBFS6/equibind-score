@@ -61,8 +61,7 @@ def hiddenlayer():
 
         p.add_argument('--config', type=argparse.FileType(mode='r'), default='configs/config.yml')
 
-        p.add_argument('--layer', type=str, default='ligand', help='which layer do you want')
-        p.add_argument('--batch_size', type=int, default=100, help='size of batches to save')
+        p.add_argument('--layer', type=str, default='both', help='which layer do you want: ligand, receptor or both')
         p.add_argument('--checkpoint', type=str, help='path to .pt file in a checkpoint directory')
         p.add_argument('--output_directory', type=str, default=None, help='path where to put the predicted results')
         p.add_argument('--run_corrections', type=bool, default=False,
@@ -189,17 +188,8 @@ def hiddenlayer():
     names = os.listdir(args.inference_path) if args.inference_path != None else tqdm(read_strings_from_txt('data/timesplit_test'))
 
     # rory's code
-    ###
-    graphls = []
-    graph_labels = {}
-    ###
+
     for idx, name in enumerate(names):
-        if int(idx) % args.batch_size == 0 and idx != 0:
-            print('\nSaving batch number ' + str(idx//args.batch_size))
-            outname = args.output_directory + '/' + str(idx//args.batch_size) + '.bin'
-            save_graphs(outname,graphls,graph_labels)
-            graphls = []
-            graph_labels = {}
         print(f'\nProcessing {name}: complex {idx + 1} of {len(names)}')
         file_names = os.listdir(os.path.join(args.inference_path, name))
         rec_name = [i for i in file_names if 'rec.pdb' in i or 'protein' in i][0]
@@ -261,8 +251,8 @@ def hiddenlayer():
         print('Calculating equibind hidden layer')
         liglayer, reclayer = model.forward(lig_graph,rec_graph,geometry_graph)
 
-        if args.layer == 'ligand':
-
+        if args.layer == 'ligand' or 'both':
+            
             lig_graph.ndata['final_hidden'] = liglayer
             lig_graph.requires_grad = False
 
@@ -277,9 +267,10 @@ def hiddenlayer():
             del lig_graph.edata['msg']
             del lig_graph.edata['x_rel']
 
-            graphls.append(lig_graph)
+            outname = args.output_directory + '/ligand/' + str(name) + '.bin'
+            save_graphs(outname,[lig_graph])
         
-        if args.layer == 'receptor':
+        if args.layer == 'receptor' or 'both':
 
             rec_graph.ndata['final_hidden'] = reclayer
             rec_graph.requires_grad = False
@@ -289,13 +280,9 @@ def hiddenlayer():
             del rec_graph.ndata['mu_r_norm']
             del rec_graph.edata['feat']
 
-            graphls.append(rec_graph)
+            outname = args.output_directory + '/receptor/' + str(name) + '.bin'
 
-        graph_labels[name] = torch.tensor([idx])
-
-    print('Saving final batch')
-    outname = args.output_directory + '/' + str(idx//args.batch_size) + '.bin'
-    save_graphs(outname,graphls,graph_labels)
+            save_graphs(outname,[rec_graph])
     
 
 if __name__ == '__main__':

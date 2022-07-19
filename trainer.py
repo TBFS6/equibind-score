@@ -14,9 +14,8 @@ import argparse
 
 # Parse arguments
 p = argparse.ArgumentParser()
-p.add_argument('--train', type=str, default='hidden_layers/receptor/train', help='path to train binary layers')
-p.add_argument('--val', type=str, default='hidden_layers/receptor/val', help='path to val binary layers')
-p.add_argument('--test', type=str, default='hidden_layers/receptor/test', help='path to test binary layers')
+p.add_argument('--hidden_layers', type=str, default='hidden_layers', help='path to hidden binary layers')
+p.add_argument('--type', type=str, default='ligand', help='ligand, receptor, or both')
 p.add_argument('--model_output', type=str, default='runs/score/ligand_trained.pt', help='path to .pt file for saving model')
 args = p.parse_args()
 
@@ -28,15 +27,20 @@ targets.set_index('PDB', inplace = True)
 valgraphls = []
 valnames = []
 
-for file in os.listdir(args.val):
-    tempvalgraphls, labeldict = load_graphs(args.val+'/'+file)
-    tempvalnames = list(labeldict.keys())
-    valnames = valnames + tempvalnames
-    labels = [int(i) for i in labeldict.values()]
-    smallest = min(labels)
-    labels = [i-smallest for i in labels]
-    tempvalgraphls = [tempvalgraphls[labels[i]] for i in range(len(tempvalgraphls))]
-    valgraphls = valgraphls + tempvalgraphls
+if args.type == 'ligand' or 'receptor': # make this a function?
+    directory = args.hidden_layers + '/' + args.type + '/val'
+    for file in os.listdir(directory):
+        tempvalgraphls, labeldict = load_graphs(directory+'/'+file)
+        tempvalnames = list(labeldict.keys())
+        valnames = valnames + tempvalnames
+        labels = [int(i) for i in labeldict.values()]
+        smallest = min(labels)
+        labels = [i-smallest for i in labels]
+        tempvalgraphls = [tempvalgraphls[labels[i]] for i in range(len(tempvalgraphls))]
+        valgraphls = valgraphls + tempvalgraphls
+
+elif args.type == 'both':
+    print('fu')
 
 val_batched_graph = dgl.batch(valgraphls)
 valpK =  targets.loc[valnames].values.flatten()
@@ -74,7 +78,6 @@ for i in range(num_epochs):
 
         # Training loop
 
-        pred = model(train_batched_graph)
         try:
             pred = model(train_batched_graph)
             optimizer.zero_grad()
