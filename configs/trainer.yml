@@ -1,0 +1,4 @@
+hidden_layers: 'fuck'
+type: 'both'
+batch_size: 100
+model_output: 'runs/score/both_trained.pt'

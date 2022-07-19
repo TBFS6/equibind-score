@@ -1,8 +1,9 @@
 import models.score_model as score_model
 from commons.custom_data_loader import custom_loader, custom_collate_10, custom_collate_20, custom_collate_11, custom_collate_21
 from torch.utils.data import DataLoader
-
+from copy import deepcopy
 import os
+import yaml
 import dgl
 from dgl.nn import GraphConv
 import torch
@@ -11,17 +12,42 @@ import torch.nn.functional as F
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import pandas as pd
 from dgl.data.utils import load_graphs
-
 import argparse
 
 # Parse arguments
-p = argparse.ArgumentParser()
-p.add_argument('--hidden_layers', type=str, default='hidden_layers', help='path to hidden binary layers')
-p.add_argument('--type', type=str, default='ligand', help='ligand, receptor, or both')
-p.add_argument('--batch_size', type=int, default=100, help='batch size for training')
-p.add_argument('--model_output', type=str, default='runs/score/ligand_trained.pt', help='path to .pt file for saving model')
-args = p.parse_args()
+def parse_arguments(arglist = None):
+    p = argparse.ArgumentParser()
+    p.add_argument('--config', type=argparse.FileType(mode='r'), default='configs/trainer.yml')
+    p.add_argument('--hidden_layers', type=str, default='hidden_layers', help='path to hidden binary layers')
+    p.add_argument('--type', type=str, default='ligand', help='ligand, receptor, or both')
+    p.add_argument('--batch_size', type=int, default=100, help='batch size for training')
+    p.add_argument('--model_output', type=str, default='runs/score/ligand_trained.pt', help='path to .pt file for saving model')
 
+    cmdline_parser = deepcopy(p)
+    args = p.parse_args(arglist)
+    clear_defaults = {key: argparse.SUPPRESS for key in args.__dict__}
+    cmdline_parser.set_defaults(**clear_defaults)
+    cmdline_parser._defaults = {}
+    cmdline_args = cmdline_parser.parse_args(arglist)
+        
+    return args, cmdline_args
+
+args, cmdline_args = parse_arguments()
+if args.config:
+    config_dict = yaml.load(args.config, Loader=yaml.FullLoader)
+    arg_dict = args.__dict__
+    for key, value in config_dict.items():
+        if isinstance(value, list):
+            for v in value:
+                arg_dict[key].append(v)
+        else:
+            if key in cmdline_args:
+                continue
+            arg_dict[key] = value
+    args.config = args.config.name
+
+print(args.hidden_layers)
+exit()
 # model 1 - true, model 2 - false
 if args.type == 'ligand' or args.type == 'receptor':
     model1 = True

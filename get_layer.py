@@ -59,7 +59,7 @@ def hiddenlayer():
     def parse_arguments(arglist = None):
         p = argparse.ArgumentParser()
 
-        p.add_argument('--config', type=argparse.FileType(mode='r'), default='configs/config.yml')
+        p.add_argument('--config', type=argparse.FileType(mode='r'), default='configs/get_layer.yml')
 
         p.add_argument('--layer', type=str, default='both', help='which layer do you want: ligand, receptor or both')
         p.add_argument('--checkpoint', type=str, help='path to .pt file in a checkpoint directory')
