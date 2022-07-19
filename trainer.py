@@ -22,6 +22,12 @@ p.add_argument('--batch_size', type=int, default=100, help='batch size for train
 p.add_argument('--model_output', type=str, default='runs/score/ligand_trained.pt', help='path to .pt file for saving model')
 args = p.parse_args()
 
+# model 1 - true, model 2 - false
+if args.type == 'ligand' or args.type == 'receptor':
+    model1 = True
+else:
+    model1 = False
+
 # Set gpu or cpu
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -30,18 +36,21 @@ traindata = custom_loader(args.hidden_layers + '/train',args.type,'bindingdata.c
 valdata = custom_loader(args.hidden_layers + '/val',args.type,'bindingdata.csv')
 testdata = custom_loader(args.hidden_layers + '/test',args.type,'bindingdata.csv')
 
-if args.type == 'ligand' or args.type == 'receptor':
+if model1:
     trainloader = DataLoader(traindata,shuffle=True,batch_size=args.batch_size,collate_fn=custom_collate_11)
     valloader = DataLoader(valdata,shuffle=False,batch_size=len(valdata),collate_fn=custom_collate_11)
     testloader = DataLoader(testdata,shuffle=False,batch_size=len(testdata),collate_fn=custom_collate_11)
 
-elif args.type == 'both':
+else:
     trainloader = DataLoader(traindata,shuffle=True,batch_size=args.batch_size,collate_fn=custom_collate_21)
     valloader = DataLoader(valdata,shuffle=False,batch_size=len(valdata),collate_fn=custom_collate_21)
     testloader = DataLoader(testdata,shuffle=False,batch_size=len(testdata),collate_fn=custom_collate_21)
 
 # Load the model
-model = score_model.GAT()
+if model1:
+    model = score_model.GAT1()
+else:
+    model = score_model.GAT2()
 model.to(device)
 
 # Define loss
@@ -55,28 +64,53 @@ num_epochs = 30
 
 for i in range(num_epochs):
 
-    for idx, (train_batched_graph, trainpK) in enumerate(trainloader):
+    if model1:
+        for idx, (train_batched_graph, trainpK) in enumerate(trainloader):
 
-        # Training loop
-        try:
-            pred = model(train_batched_graph)
-            optimizer.zero_grad()
-            target = loss(pred,trainpK)
-            target.backward()
-            optimizer.step()
-        except:
-            continue
+            # Training loop
+            try:
+                pred = model(train_batched_graph)
+                optimizer.zero_grad()
+                target = loss(pred,trainpK)
+                target.backward()
+                optimizer.step()
+            except:
+                continue
 
-        print('Batch ' + str(idx+1)+ ' training loss: ' + str(float(target)))
+            print('Batch ' + str(idx+1)+ ' training loss: ' + str(float(target)))
 
-        count += 1
+            count += 1
 
-    # Validation
-    with torch.no_grad():
-        val_batched_graph, valpK = valloader[0]
-        valpred = model(val_batched_graph)
-        valloss = loss(valpred,valpK)
-        print('\nIteration ' + str(i+1)+ ' validation loss: ' + str(float(valloss)) +'\n')
+        # Validation
+        with torch.no_grad():
+            val_batched_graph, valpK = valloader[0]
+            valpred = model(val_batched_graph)
+            valloss = loss(valpred,valpK)
+            print('\nIteration ' + str(i+1)+ ' validation loss: ' + str(float(valloss)) +'\n')
+
+    else:
+        for idx, (lig_batched_graph, rec_batched_graph, trainpK) in enumerate(trainloader):
+
+            # Training loop
+            try:
+                pred = model(lig_batched_graph, rec_batched_graph)
+                optimizer.zero_grad()
+                target = loss(pred,trainpK)
+                target.backward()
+                optimizer.step()
+            except:
+                continue
+
+            print('Batch ' + str(idx+1)+ ' training loss: ' + str(float(target)))
+
+            count += 1
+
+        # Validation
+        with torch.no_grad():
+            val_lig_batched_graph, val_rec_batched_graph, valpK = valloader[0]
+            valpred = model(val_lig_batched_graph, val_rec_batched_graph)
+            valloss = loss(valpred,valpK)
+            print('\nIteration ' + str(i+1)+ ' validation loss: ' + str(float(valloss)) +'\n')
     
 
 print('Training finished, saving model')
@@ -84,10 +118,14 @@ torch.save(model.state_dict(), args.model_output)
 
 # Evaluation
 with torch.no_grad():
+    if model1:
         test_batched_graph, testpK = testloader[0]
         testpred = model(test_batched_graph)
         testloss = loss(testpred,testpK)
-
+    else:
+        test_lig_batched_graph, test_val_batched_graph, testpK = testloader[0]
+        testpred = model(test_lig_batched_graph, test_val_batched_graph)
+        testloss = loss(testpred,testpK)
 
 print('\nTest loss: ' + testloss)
 print('\nTest RMSE: ' + torch.sqrt(testloss))
