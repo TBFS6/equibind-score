@@ -1,4 +1,6 @@
 import models.score_model as score_model
+from commons.custom_data_loader import custom_loader, custom_collate_10, custom_collate_20, custom_collate_11, custom_collate_21
+from torch.utils.data import DataLoader
 
 import os
 import dgl
@@ -16,39 +18,31 @@ import argparse
 p = argparse.ArgumentParser()
 p.add_argument('--hidden_layers', type=str, default='hidden_layers', help='path to hidden binary layers')
 p.add_argument('--type', type=str, default='ligand', help='ligand, receptor, or both')
+p.add_argument('--batch_size', type=int, default=100, help='batch size for training')
 p.add_argument('--model_output', type=str, default='runs/score/ligand_trained.pt', help='path to .pt file for saving model')
 args = p.parse_args()
 
-# Load targets
-targets = pd.read_csv('bindingdata.csv')
-targets.set_index('PDB', inplace = True)
+# Set gpu or cpu
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-# Load validation data
-valgraphls = []
-valnames = []
+# Load the data
+traindata = custom_loader(args.hidden_layers + '/train',args.type,'bindingdata.csv')
+valdata = custom_loader(args.hidden_layers + '/val',args.type,'bindingdata.csv')
+testdata = custom_loader(args.hidden_layers + '/test',args.type,'bindingdata.csv')
 
-if args.type == 'ligand' or 'receptor': # make this a function?
-    directory = args.hidden_layers + '/' + args.type + '/val'
-    for file in os.listdir(directory):
-        tempvalgraphls, labeldict = load_graphs(directory+'/'+file)
-        tempvalnames = list(labeldict.keys())
-        valnames = valnames + tempvalnames
-        labels = [int(i) for i in labeldict.values()]
-        smallest = min(labels)
-        labels = [i-smallest for i in labels]
-        tempvalgraphls = [tempvalgraphls[labels[i]] for i in range(len(tempvalgraphls))]
-        valgraphls = valgraphls + tempvalgraphls
+if args.type == 'ligand' or args.type == 'receptor':
+    trainloader = DataLoader(traindata,shuffle=True,batch_size=args.batch_size,collate_fn=custom_collate_11)
+    valloader = DataLoader(valdata,shuffle=False,batch_size=len(valdata),collate_fn=custom_collate_11)
+    testloader = DataLoader(testdata,shuffle=False,batch_size=len(testdata),collate_fn=custom_collate_11)
 
 elif args.type == 'both':
-    print('fu')
+    trainloader = DataLoader(traindata,shuffle=True,batch_size=args.batch_size,collate_fn=custom_collate_21)
+    valloader = DataLoader(valdata,shuffle=False,batch_size=len(valdata),collate_fn=custom_collate_21)
+    testloader = DataLoader(testdata,shuffle=False,batch_size=len(testdata),collate_fn=custom_collate_21)
 
-val_batched_graph = dgl.batch(valgraphls)
-valpK =  targets.loc[valnames].values.flatten()
-valpK = torch.Tensor(valpK)
-
-# Create the model with given dimensions
+# Load the model
 model = score_model.GAT()
-#model.to('cuda:0')
+model.to(device)
 
 # Define loss
 loss = nn.MSELoss()
@@ -61,23 +55,9 @@ num_epochs = 30
 
 for i in range(num_epochs):
 
-    # Loop through each batch
-    count=0
-    for file in os.listdir(args.train):
-
-        # Load training batch
-        traingraphls, labeldict = load_graphs(args.train+'/'+file)
-        labels = [int(i) for i in labeldict.values()]
-        smallest = min(labels)
-        labels = [i-smallest for i in labels]
-        traingraphls = [traingraphls[labels[i]] for i in range(len(traingraphls))]
-        trainnames = list(labeldict.keys())
-        train_batched_graph = dgl.batch(traingraphls)
-        trainpK =  targets.loc[trainnames].values.flatten()
-        trainpK = torch.Tensor(trainpK)
+    for idx, (train_batched_graph, trainpK) in enumerate(trainloader):
 
         # Training loop
-
         try:
             pred = model(train_batched_graph)
             optimizer.zero_grad()
@@ -87,12 +67,13 @@ for i in range(num_epochs):
         except:
             continue
 
-        print('Batch ' + str(count+1)+ ' training loss: ' + str(float(target)))
+        print('Batch ' + str(idx+1)+ ' training loss: ' + str(float(target)))
 
         count += 1
 
     # Validation
     with torch.no_grad():
+        val_batched_graph, valpK = valloader[0]
         valpred = model(val_batched_graph)
         valloss = loss(valpred,valpK)
         print('\nIteration ' + str(i+1)+ ' validation loss: ' + str(float(valloss)) +'\n')
@@ -102,29 +83,11 @@ print('Training finished, saving model')
 torch.save(model.state_dict(), args.model_output)
 
 # Evaluation
+with torch.no_grad():
+        test_batched_graph, testpK = testloader[0]
+        testpred = model(test_batched_graph)
+        testloss = loss(testpred,testpK)
 
-# Load test data
-testgraphls = []
-testnames = []
-
-for file in os.listdir(args.val):
-    temptestgraphls, labeldict = load_graphs(args.test+'/'+file)
-    temptestnames = list(labeldict.keys())
-    testnames = testnames + temptestnames
-    testgraphls = testgraphls + temptestgraphls
-    labels = [int(i) for i in labeldict.values()]
-    smallest = min(labels)
-    labels = [i-smallest for i in labels]
-    testgraphls = [testgraphls[labels[i]] for i in range(len(testgraphls))]
-    break
-
-test_batched_graph = dgl.batch(testgraphls)
-testpK =  targets.loc[testnames].values.flatten()
-testpK = torch.Tensor(testpK)
-
-# Test prediction and loss
-testpred = torch.squeeze(model(test_batched_graph, test_batched_graph.ndata['final_hidden'].float()))
-testloss = loss(testpred,testpK)
 
 print('\nTest loss: ' + testloss)
 print('\nTest RMSE: ' + torch.sqrt(testloss))

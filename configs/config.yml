@@ -3,6 +3,6 @@ run_dirs:
 
 inference_path: 'data/train' # this should be your input file path as described in the main readme
 
-output_directory: 'hidden_layers' # the hidden layers will be saved here
+output_directory: 'hidden_layers/train' # the hidden layers will be saved here
 
 layer: 'both' # which layer do you want (ligand or receptor or both)
