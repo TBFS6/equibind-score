@@ -92,16 +92,12 @@ for i in range(num_epochs):
         for idx, (train_batched_graph, trainpK) in enumerate(trainloader):
 
             # Training loop
-            try:
-                pred = model(train_batched_graph)
-                optimizer.zero_grad()
-                target = loss(pred,trainpK)
-                target.backward()
-                optimizer.step()
-                print('Batch ' + str(idx+1)+ ' training loss: ' + str(float(target)))
-            except:
-                print('Error processing this batch, skipping')
-                continue
+            pred = model(train_batched_graph)
+            optimizer.zero_grad()
+            target = loss(pred,trainpK)
+            target.backward()
+            optimizer.step()
+            print('Batch ' + str(idx+1)+ ' training loss: ' + str(float(target)))
 
         # Validation
         with torch.no_grad():
@@ -114,19 +110,12 @@ for i in range(num_epochs):
         for idx, (lig_batched_graph, rec_batched_graph, trainpK) in enumerate(trainloader):
 
             # Training loop
-
-            try:
-                pred = model(lig_batched_graph, rec_batched_graph)
-                optimizer.zero_grad()
-                target = loss(pred,trainpK)
-                target.backward()
-                optimizer.step()
-                print('Batch ' + str(idx+1)+ ' training loss: ' + str(float(target)))
-            except:
-                print('Error processing this batch, skipping')
-                continue
-
-            
+            pred = model(lig_batched_graph, rec_batched_graph)
+            optimizer.zero_grad()
+            target = loss(pred,trainpK)
+            target.backward()
+            optimizer.step()
+            print('Batch ' + str(idx+1)+ ' training loss: ' + str(float(target)))      
 
         # Validation
         with torch.no_grad():
@@ -142,13 +131,13 @@ torch.save(model.state_dict(), args.model_output)
 # Evaluation
 with torch.no_grad():
     if model1:
-        test_batched_graph, testpK = testloader[0]
-        testpred = model(test_batched_graph)
-        testloss = loss(testpred,testpK)
+        for test_batched_graph, testpK in testloader:
+            testpred = model(test_batched_graph)
+            testloss = loss(testpred,testpK)
     else:
-        test_lig_batched_graph, test_val_batched_graph, testpK = testloader[0]
-        testpred = model(test_lig_batched_graph, test_val_batched_graph)
-        testloss = loss(testpred,testpK)
+        for test_lig_batched_graph, test_val_batched_graph, testpK in testloader:
+            testpred = model(test_lig_batched_graph, test_val_batched_graph)
+            testloss = loss(testpred,testpK)
 
 print('\nTest loss: ' + testloss)
 print('\nTest RMSE: ' + torch.sqrt(testloss))
