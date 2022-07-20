@@ -5,6 +5,9 @@ from dgl.data.utils import load_graphs
 import dgl
 import torch
 
+# Set gpu or cpu
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 class custom_loader(Dataset):
 
     def __init__(self,path,type,pkpath=None):
@@ -70,6 +73,7 @@ def custom_collate_10(data):
 
     graphls = [i for i in data]
     batched_graph = dgl.batch(graphls)
+    batched_graph = batched_graph.to(device)
     return batched_graph
 
 def custom_collate_11(data):
@@ -77,6 +81,8 @@ def custom_collate_11(data):
     batched_graph = dgl.batch(graphls)
     pk = [i[1] for i in data]
     pk = torch.Tensor(pk)
+    batched_graph = batched_graph.to(device)
+    pk = pk.to(device)
     return batched_graph, pk
 
 def custom_collate_20(data):
@@ -84,6 +90,8 @@ def custom_collate_20(data):
     lig_batched_graph = dgl.batch(liggraphls)
     recgraphls = [i[1] for i in data]
     rec_batched_graph = dgl.batch(recgraphls)
+    lig_batched_graph = lig_batched_graph.to(device)
+    rec_batched_graph = rec_batched_graph.to(device)
     return lig_batched_graph, rec_batched_graph
 
 def custom_collate_21(data):
@@ -93,4 +101,7 @@ def custom_collate_21(data):
     rec_batched_graph = dgl.batch(recgraphls)
     pk = [i[2] for i in data]
     pk = torch.Tensor(pk)
+    lig_batched_graph = lig_batched_graph.to(device)
+    rec_batched_graph = rec_batched_graph.to(device)
+    pk = pk.to(device)
     return lig_batched_graph, rec_batched_graph, pk
