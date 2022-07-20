@@ -98,17 +98,17 @@ for i in range(num_epochs):
                 target = loss(pred,trainpK)
                 target.backward()
                 optimizer.step()
+                print('Batch ' + str(idx+1)+ ' training loss: ' + str(float(target)))
             except:
+                print('Error processing this batch, skipping')
                 continue
-
-            print('Batch ' + str(idx+1)+ ' training loss: ' + str(float(target)))
 
         # Validation
         with torch.no_grad():
-            val_batched_graph, valpK = valloader[0]
-            valpred = model(val_batched_graph)
-            valloss = loss(valpred,valpK)
-            print('\nIteration ' + str(i+1)+ ' validation loss: ' + str(float(valloss)) +'\n')
+            for val_batched_graph, valpK in valloader:
+                valpred = model(val_batched_graph)
+                valloss = loss(valpred,valpK)
+                print('\nIteration ' + str(i+1)+ ' validation loss: ' + str(float(valloss)) +'\n')
 
     else:
         for idx, (lig_batched_graph, rec_batched_graph, trainpK) in enumerate(trainloader):
@@ -121,17 +121,19 @@ for i in range(num_epochs):
                 target = loss(pred,trainpK)
                 target.backward()
                 optimizer.step()
+                print('Batch ' + str(idx+1)+ ' training loss: ' + str(float(target)))
             except:
+                print('Error processing this batch, skipping')
                 continue
 
-            print('Batch ' + str(idx+1)+ ' training loss: ' + str(float(target)))
+            
 
         # Validation
         with torch.no_grad():
-            val_lig_batched_graph, val_rec_batched_graph, valpK = valloader[0]
-            valpred = model(val_lig_batched_graph, val_rec_batched_graph)
-            valloss = loss(valpred,valpK)
-            print('\nIteration ' + str(i+1)+ ' validation loss: ' + str(float(valloss)) +'\n')
+            for val_lig_batched_graph, val_rec_batched_graph, valpK in valloader:
+                valpred = model(val_lig_batched_graph, val_rec_batched_graph)
+                valloss = loss(valpred,valpK)
+                print('\nIteration ' + str(i+1)+ ' validation loss: ' + str(float(valloss)) +'\n')
     
 
 print('Training finished, saving model')
