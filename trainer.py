@@ -70,7 +70,6 @@ else:
     valloader = DataLoader(valdata,shuffle=False,batch_size=len(valdata),collate_fn=custom_collate_21)
     testloader = DataLoader(testdata,shuffle=False,batch_size=len(testdata),collate_fn=custom_collate_21)
 
-print(len(trainloader))
 # Load the model
 if model1:
     model = score_model.GAT1()
@@ -104,8 +103,6 @@ for i in range(num_epochs):
 
             print('Batch ' + str(idx+1)+ ' training loss: ' + str(float(target)))
 
-            count += 1
-
         # Validation
         with torch.no_grad():
             val_batched_graph, valpK = valloader[0]
@@ -117,6 +114,7 @@ for i in range(num_epochs):
         for idx, (lig_batched_graph, rec_batched_graph, trainpK) in enumerate(trainloader):
 
             # Training loop
+
             try:
                 pred = model(lig_batched_graph, rec_batched_graph)
                 optimizer.zero_grad()
@@ -127,8 +125,6 @@ for i in range(num_epochs):
                 continue
 
             print('Batch ' + str(idx+1)+ ' training loss: ' + str(float(target)))
-
-            count += 1
 
         # Validation
         with torch.no_grad():

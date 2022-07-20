@@ -58,7 +58,8 @@ class GAT2(nn.Module):
         rec.ndata['h'] = hrec
         hrec = dgl.readout_nodes(rec,'h',op='max')
 
-        h = torch.cat((hlig,hrec),axis=1)
+        h = torch.cat((hlig,hrec),axis=2)
+        h = h.squeeze(axis=1)
 
         h = self.lin1(h)
         h = F.relu(h)
