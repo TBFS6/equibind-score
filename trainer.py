@@ -46,8 +46,6 @@ if args.config:
             arg_dict[key] = value
     args.config = args.config.name
 
-print(args.hidden_layers)
-exit()
 # model 1 - true, model 2 - false
 if args.type == 'ligand' or args.type == 'receptor':
     model1 = True
@@ -72,6 +70,7 @@ else:
     valloader = DataLoader(valdata,shuffle=False,batch_size=len(valdata),collate_fn=custom_collate_21)
     testloader = DataLoader(testdata,shuffle=False,batch_size=len(testdata),collate_fn=custom_collate_21)
 
+print(len(trainloader))
 # Load the model
 if model1:
     model = score_model.GAT1()

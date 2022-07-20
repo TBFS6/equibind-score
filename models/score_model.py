@@ -7,7 +7,7 @@ import torch.nn.functional as F
 
 class GAT1(nn.Module):
     def __init__(self):
-        super(GAT, self).__init__()
+        super(GAT1, self).__init__()
         self.gat1 = GATConv(64, 64, 10, allow_zero_in_degree=True)
         self.gat2 = GATConv(64,128,1, allow_zero_in_degree=True)
         self.maxpool = MaxPooling()
@@ -29,9 +29,9 @@ class GAT1(nn.Module):
 
         return h.flatten()
 
-class GAT(nn.Module):
+class GAT2(nn.Module):
     def __init__(self):
-        super(GAT, self).__init__()
+        super(GAT2, self).__init__()
         self.gat1lig = GATConv(64, 64, 10, allow_zero_in_degree=True)
         self.gat2lig = GATConv(64,128,1, allow_zero_in_degree=True)
         self.gat1rec = GATConv(64, 64, 10, allow_zero_in_degree=True)
