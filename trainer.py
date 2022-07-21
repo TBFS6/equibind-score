@@ -19,7 +19,7 @@ def parse_arguments(arglist = None):
     p = argparse.ArgumentParser()
     p.add_argument('--config', type=argparse.FileType(mode='r'), default='configs/trainer.yml')
     p.add_argument('--hidden_layers', type=str, default='hidden_layers', help='path to hidden binary layers')
-    p.add_argument('--type', type=str, default='ligand', help='ligand, receptor, or both')
+    p.add_argument('--type', type=str, default='both', help='ligand, receptor, or both')
     p.add_argument('--batch_size', type=int, default=100, help='batch size for training')
     p.add_argument('--model_output', type=str, default='runs/score/ligand_trained.pt', help='path to .pt file for saving model')
 
@@ -156,6 +156,7 @@ if model1:
     testmodel = score_model.GAT1
 else:
     testmodel = score_model.GAT2
+    
 model.load_state_dict(torch.load(args.model_output))
 model.eval()
 

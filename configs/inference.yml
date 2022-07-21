@@ -2,4 +2,4 @@ hidden_layers: 'hidden_layers/test' # path to hidden layers you want to perform 
 type: 'both' # ligand, receptor, or both: which graph/model will you use (make sue this aligns with the model you load)
 model_input: 'runs/score/both_trained.pt' # path to model you want to run
 output_file: 'inference.csv' # path to csv file where binding affinities will be saved
-batch_size: 100 # can run inference in batches
+batch_size: 100 # can run inference in batches (needed because the graphs could max out memory)
