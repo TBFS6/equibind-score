@@ -5,14 +5,19 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+lindropout = 0.4
+attdropout = 0.05
+featdropout = 0.2
+
 class GAT1(nn.Module):
     def __init__(self):
         super(GAT1, self).__init__()
-        self.gat1 = GATConv(64, 64, 10, allow_zero_in_degree=True)
-        self.gat2 = GATConv(64,128,1, allow_zero_in_degree=True)
+        self.gat1 = GATConv(64, 64, 10, allow_zero_in_degree=True, feat_drop=featdropout, attn_drop=attdropout)
+        self.gat2 = GATConv(64,128,1, allow_zero_in_degree=True, feat_drop=featdropout, attn_drop=attdropout)
         self.maxpool = MaxPooling()
         self.lin1 = nn.Linear(128,128)
         self.lin2 = nn.Linear(128,1)
+        self.dropout = nn.Dropout(lindropout)
 
     def forward(self, g):
         h = self.gat1(g, g.ndata['final_hidden'])
@@ -23,6 +28,7 @@ class GAT1(nn.Module):
         g.ndata['h'] = h
         h = dgl.readout_nodes(g,'h',op='max')
         h = self.lin1(h)
+        h=self.dropout(h)
         h = F.relu(h)
         h = self.lin2(h)
         h = F.relu(h)
@@ -32,13 +38,14 @@ class GAT1(nn.Module):
 class GAT2(nn.Module):
     def __init__(self):
         super(GAT2, self).__init__()
-        self.gat1lig = GATConv(64, 64, 10, allow_zero_in_degree=True)
-        self.gat2lig = GATConv(64,128,1, allow_zero_in_degree=True)
-        self.gat1rec = GATConv(64, 64, 10, allow_zero_in_degree=True)
-        self.gat2rec = GATConv(64,128,1, allow_zero_in_degree=True)
+        self.gat1lig = GATConv(64, 64, 10, allow_zero_in_degree=True, feat_drop=featdropout, attn_drop=attdropout)
+        self.gat2lig = GATConv(64,128,1, allow_zero_in_degree=True, feat_drop=featdropout, attn_drop=attdropout)
+        self.gat1rec = GATConv(64, 64, 10, allow_zero_in_degree=True, feat_drop=featdropout, attn_drop=attdropout)
+        self.gat2rec = GATConv(64,128,1, allow_zero_in_degree=True, feat_drop=featdropout, attn_drop=attdropout)
         self.maxpool = MaxPooling()
         self.lin1 = nn.Linear(256,128)
         self.lin2 = nn.Linear(128,1)
+        self.dropout = nn.Dropout(lindropout)
 
     def forward(self, lig, rec):
 
@@ -62,6 +69,7 @@ class GAT2(nn.Module):
         h = h.squeeze(axis=1)
 
         h = self.lin1(h)
+        h = self.dropout(h)
         h = F.relu(h)
         h = self.lin2(h)
         h = F.relu(h)

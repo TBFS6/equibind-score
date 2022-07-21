@@ -84,11 +84,19 @@ loss = nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.0005)
 
 # Training params
-num_epochs = 30
+num_epochs = 60
+
+# Info saving
+csv = 'iteration, train, test\n'
+trainlen = len(trainloader)
 
 for i in range(num_epochs):
 
     if model1:
+
+        model.train()
+        trainerror = 0
+
         for idx, (train_batched_graph, trainpK) in enumerate(trainloader):
 
             # Training loop
@@ -98,15 +106,25 @@ for i in range(num_epochs):
             target.backward()
             optimizer.step()
             print('Batch ' + str(idx+1)+ ' training loss: ' + str(float(target)))
+            trainerror += target
+
+        trainerror /= trainlen
 
         # Validation
+        model.eval()
         with torch.no_grad():
             for val_batched_graph, valpK in valloader:
                 valpred = model(val_batched_graph)
                 valloss = loss(valpred,valpK)
                 print('\nIteration ' + str(i+1)+ ' validation loss: ' + str(float(valloss)) +'\n')
 
+        csv += str(i+1) + ', ' + str(float(trainerror)) + ', ' + str(float(valloss)) + '\n'
+
     else:
+
+        model.train()
+        trainerror = 0
+
         for idx, (lig_batched_graph, rec_batched_graph, trainpK) in enumerate(trainloader):
 
             # Training loop
@@ -115,18 +133,31 @@ for i in range(num_epochs):
             target = loss(pred,trainpK)
             target.backward()
             optimizer.step()
-            print('Batch ' + str(idx+1)+ ' training loss: ' + str(float(target)))      
+            print('Batch ' + str(idx+1)+ ' training loss: ' + str(float(target)))
+            trainerror += target
+
+        trainerror /= trainlen      
 
         # Validation
+        model.eval()
         with torch.no_grad():
             for val_lig_batched_graph, val_rec_batched_graph, valpK in valloader:
                 valpred = model(val_lig_batched_graph, val_rec_batched_graph)
                 valloss = loss(valpred,valpK)
                 print('\nIteration ' + str(i+1)+ ' validation loss: ' + str(float(valloss)) +'\n')
+        
+        csv += str(i+1) + ', ' + str(float(trainerror)) + ', ' + str(float(valloss)) + '\n'
     
 
 print('Training finished, saving model')
 torch.save(model.state_dict(), args.model_output)
+
+if model1:
+    testmodel = score_model.GAT1
+else:
+    testmodel = score_model.GAT2
+model.load_state_dict(torch.load(args.model_output))
+model.eval()
 
 # Evaluation
 with torch.no_grad():
@@ -139,5 +170,9 @@ with torch.no_grad():
             testpred = model(test_lig_batched_graph, test_val_batched_graph)
             testloss = loss(testpred,testpK)
 
-print('\nTest loss: ' + testloss)
-print('\nTest RMSE: ' + torch.sqrt(testloss))
+print('\nTest loss: ' + str(testloss))
+print('\nTest RMSE: ' + str(torch.sqrt(testloss)))
+
+file = open('both_training_info.csv','w')
+file.write(csv)
+file.close()

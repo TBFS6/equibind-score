@@ -50,14 +50,14 @@ class custom_loader(Dataset):
             if self.bind == True:
                 return graph, pk
             else:
-                return graph
+                return graph, self.ligs[idx]
 
         elif self.type == 'receptor':
             graph = load_graphs(self.path + '/receptor/' + self.receptors[idx] + '.bin')[0][0]
             if self.bind == True:
                 return graph, pk
             else:
-                return graph
+                return graph, self.receptors[idx]
 
         if self.type == 'both':
             liggraph = load_graphs(self.path + '/ligand/' + self.ligs[idx] + '.bin')[0][0]
@@ -65,16 +65,17 @@ class custom_loader(Dataset):
             if self.bind == True:
                 return liggraph, recgraph, pk
             else:
-                return liggraph, recgraph
+                return liggraph, recgraph, self.ligs[idx]
 
 # custom collate returns one or two batched graphs and a torch tensor of pK values if available
 # code is 1 or 2 graphs then pk or no pk
 def custom_collate_10(data):
 
-    graphls = [i for i in data]
+    graphls = [i[0] for i in data]
+    namels = [i[1] for i in data]
     batched_graph = dgl.batch(graphls)
     batched_graph = batched_graph.to(device)
-    return batched_graph
+    return batched_graph, namesls
 
 def custom_collate_11(data):
     graphls = [i[0] for i in data]
@@ -90,9 +91,10 @@ def custom_collate_20(data):
     lig_batched_graph = dgl.batch(liggraphls)
     recgraphls = [i[1] for i in data]
     rec_batched_graph = dgl.batch(recgraphls)
+    namels = [i[2] for i in data]
     lig_batched_graph = lig_batched_graph.to(device)
     rec_batched_graph = rec_batched_graph.to(device)
-    return lig_batched_graph, rec_batched_graph
+    return lig_batched_graph, rec_batched_graph, namels
 
 def custom_collate_21(data):
     liggraphls = [i[0] for i in data]
