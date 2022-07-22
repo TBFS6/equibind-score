@@ -5,9 +5,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-lindropout = 0.4
-attdropout = 0.05
-featdropout = 0.2
+lindropout = 0.2
+attdropout = 0
+featdropout = 0.05
 
 class GAT1(nn.Module):
     def __init__(self):
