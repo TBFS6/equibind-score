@@ -52,6 +52,8 @@ if args.type == 'ligand' or args.type == 'receptor':
 else:
     model1 = False
 
+print(args.model_output)
+
 # Set gpu or cpu
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 

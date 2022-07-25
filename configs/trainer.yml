@@ -1,4 +1,4 @@
 hidden_layers: 'hidden_layers' # path to hidden layers with test/train/val split inside this folder
-type: 'both' # ligand, receptor, or both: which graph/model will you use
+type: 'ligand' # ligand, receptor, or both: which graph/model will you use
 batch_size: 100 # batch size for training only
-model_output: 'runs/score/both_trained.pt' # path to save model
+model_output: 'runs/score/ligand_trained.pt' # path to save model
