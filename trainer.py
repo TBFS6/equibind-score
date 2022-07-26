@@ -52,8 +52,6 @@ if args.type == 'ligand' or args.type == 'receptor':
 else:
     model1 = False
 
-print(args.model_output)
-
 # Set gpu or cpu
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -176,6 +174,6 @@ with torch.no_grad():
 print('\nTest loss: ' + str(testloss))
 print('\nTest RMSE: ' + str(torch.sqrt(testloss)))
 
-file = open('both_training_info.csv','w')
+file = open('receptor_training_info.csv','w')
 file.write(csv)
 file.close()

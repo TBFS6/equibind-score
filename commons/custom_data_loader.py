@@ -23,7 +23,7 @@ class custom_loader(Dataset):
 
         if self.type == 'ligand' or self.type == 'both':
             self.ligs = [i[:-4] for i in os.listdir(path + '/ligand')]
-        if self.type == 'ligand' or self.type == 'both':
+        if self.type == 'receptor' or self.type == 'both':
             self.receptors = [i[:-4] for i in os.listdir(path + '/receptor')]
         
         if self.type == 'both':
@@ -32,7 +32,7 @@ class custom_loader(Dataset):
                 exit()
         
     def __len__(self):
-        if self.type == 'ligand' or 'both':
+        if self.type == 'ligand' or self.type == 'both':
             return len(self.ligs)
         elif self.type == 'receptor':
             return len(self.receptors)
