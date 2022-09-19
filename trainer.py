@@ -84,10 +84,11 @@ loss = nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.0005)
 
 # Training params
-num_epochs = 60
+num_epochs = 10
 
 # Info saving
-csv = 'iteration, train, test\n'
+csv = 'iteration, train, val\n'
+csv2 = 'batch, train, val\n'
 trainlen = len(trainloader)
 
 for i in range(num_epochs):
@@ -107,6 +108,18 @@ for i in range(num_epochs):
             optimizer.step()
             print('Batch ' + str(idx+1)+ ' training loss: ' + str(float(target)))
             trainerror += target
+
+            if i == 0:
+                # Validation
+                model.eval()
+                with torch.no_grad():
+                    for val_batched_graph, valpK in valloader:
+                        valpred = model(val_batched_graph)
+                        valloss = loss(valpred,valpK)
+                        print('\nBatch ' + str(idx+1)+ ' validation loss: ' + str(float(valloss)) +'\n')
+                csv2 += str(idx+1) + ', ' + str(float(target)) + ', ' + str(float(valloss)) + '\n'
+                model.train()
+
 
         trainerror /= trainlen
 
@@ -135,6 +148,17 @@ for i in range(num_epochs):
             optimizer.step()
             print('Batch ' + str(idx+1)+ ' training loss: ' + str(float(target)))
             trainerror += target
+
+            if i == 0:
+                # Validation
+                model.eval()
+                with torch.no_grad():
+                    for val_lig_batched_graph, val_rec_batched_graph, valpK in valloader:
+                        valpred = model(val_lig_batched_graph, val_rec_batched_graph)
+                        valloss = loss(valpred,valpK)
+                        print('\nBatch ' + str(idx+1)+ ' validation loss: ' + str(float(valloss)) +'\n')
+                csv2 += str(idx+1) + ', ' + str(float(target)) + ', ' + str(float(valloss)) + '\n'
+                model.train()
 
         trainerror /= trainlen      
 
@@ -174,6 +198,10 @@ with torch.no_grad():
 print('\nTest loss: ' + str(testloss))
 print('\nTest RMSE: ' + str(torch.sqrt(testloss)))
 
-file = open('receptor_training_info.csv','w')
+file = open('traininginfo/'+args.type + '_training_info.csv','w')
 file.write(csv)
+file.close()
+
+file = open('traininginfo/'+args.type + '_batch_info.csv','w')
+file.write(csv2)
 file.close()
